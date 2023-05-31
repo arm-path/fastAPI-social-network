@@ -1,8 +1,5 @@
-import io
-import os
 from typing import AsyncGenerator
 
-from PIL import Image
 from fastapi import HTTPException, Depends
 from sqlalchemy import insert, select, update, delete
 from sqlalchemy.orm import load_only, selectinload
@@ -11,6 +8,7 @@ from src.models.sessions import get_async_session
 from src.models.tables import Post, User
 from src.schemas.post_schema import PostSchema, SortedPostSchema
 from src.schemas.user_schema import TokenUserSchema
+from src.services.auxiliary_service import UploadFileService
 from src.services.user_service import get_current_user
 
 
@@ -85,30 +83,9 @@ class PostService:
                 print('PostService.get_posts_all -> ', errData)
         return posts
 
-    @classmethod
-    async def check_image(cls, uploaded_file):
-        if not uploaded_file.content_type in ['image/jpeg', 'image/png', 'image/svg']:
-            raise HTTPException(status_code=400, detail={'status': 400, 'data': {'errors': ['File must be an image']}})
-
-        content = await uploaded_file.read()
-        bytes_image = io.BytesIO(content)
-        image = Image.open(bytes_image)
-        max_size = (300, 300)
-        image.thumbnail(max_size)
-
-        return image
-
-    async def upload_image(self, uploaded_file) -> str:
-        if uploaded_file is None:
-            return None
-        user_posts = f"static/user_posts/{self.current_user['username']}"
-        os.makedirs(user_posts, exist_ok=True)
-        image = await self.check_image(uploaded_file)
-        image.save(f'{user_posts}/{uploaded_file.filename}')
-        return f'{user_posts}/{uploaded_file.filename}'
-
     async def create_post(self, text, uploaded_file):
-        image_path = await self.upload_image(uploaded_file)
+        image_path = await UploadFileService.upload_image(uploaded_file, 'user_posts',
+                                                          self.current_user['username'], (400, 400))
         try:
             user_id = int(self.current_user['id'])
             post = await self.session.execute(insert(Post).
@@ -127,7 +104,7 @@ class PostService:
         if image is None:
             image = post.image_path
         else:
-            image = await self.upload_image(image)
+            image = await UploadFileService.upload_image(image, 'user_posts', self.current_user['username'], (400, 400))
         post = await self.session.execute(
             update(Post)
                 .filter(Post.id == id_post, Post.user_id == self.user_id)
