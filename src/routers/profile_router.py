@@ -28,3 +28,14 @@ async def profile(service: ProfileService = Depends()):
 async def update_profile(service: ProfileService = Depends(),
                          profile: UpdateProfile = Depends(UpdateProfile.as_form)):
     return await service.update_profile(profile)
+
+
+@router.post('/friend/addition-deletion')
+async def addition_deletion(user_id: int,
+                            service: ProfileService = Depends()):
+    return await service.addition_and_deletion_friend(user_id)
+
+
+@router.get('/friends/{type}')
+async def get_friend(type: str, service: ProfileService = Depends()):
+    return await service.get_friend(type)

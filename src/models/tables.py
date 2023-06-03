@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import EmailStr
-from sqlalchemy import Integer, String, DateTime, Boolean, ForeignKey, Date
+from sqlalchemy import Integer, String, DateTime, Boolean, ForeignKey, Date, or_, and_
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -23,6 +23,20 @@ class User(Base):
     is_administrator: Mapped[bool] = mapped_column(Boolean, default=False)
     created: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
     last_entrance: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    followers: Mapped[list['Friend']] = relationship(back_populates='follower_user',
+                                                     foreign_keys='Friend.follower_user_id')
+    following: Mapped[list['Friend']] = relationship(back_populates='following_user',
+                                                     foreign_keys='Friend.following_user_id')
+
+
+class Friend(Base):
+    __tablename__ = 'friend'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    follower_user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    follower_user: Mapped['User'] = relationship(back_populates='followers', foreign_keys=[follower_user_id])
+    following_user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    following_user: Mapped['User'] = relationship(back_populates='following', foreign_keys=[following_user_id])
+    friends: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Profile(Base):

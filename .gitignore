@@ -18,6 +18,7 @@ env3.*
 env
 docs_build
 venv
+static
 docs.zip
 archive.zip
 
