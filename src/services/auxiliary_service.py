@@ -1,8 +1,14 @@
 import io
 import os
+from typing import AsyncGenerator
 
-from fastapi import UploadFile
 from PIL import Image
+from fastapi import UploadFile, Depends
+
+from src.models.sessions import get_async_session
+from src.routers.user_router import sign_in_user
+from src.schemas.user_schema import JWTToken
+from src.services.user_service import UserService
 
 
 class UploadFileService:
@@ -26,3 +32,26 @@ class UploadFileService:
         image = await cls.check_image(uploaded_file, max_size)
         image.save(f'{static_directory}/{uploaded_file.filename}')
         return f'{static_directory}/{uploaded_file.filename}'
+
+
+class SignInData:
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+
+class GetCurrentUserService:
+    def __init__(self, service_user: UserService = Depends(UserService),
+                 session: AsyncGenerator = Depends(get_async_session)):
+        self.service_user = service_user
+        self.session = session
+
+    async def get_token(self, username, password) -> JWTToken:
+        return await sign_in_user(
+            data_user=SignInData(username=username, password=password),
+            session=self.session,
+            services=self.service_user
+        )
+
+    async def get_current_user(self, token):
+        return await UserService.get_jwt_user(token['access_token'])

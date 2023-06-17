@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %} Chat: {{username}} {% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="chat-title">Chat</h1>
+    <h3 class="chat-subtitle" id="username">{{ username }}</h3>
+    <div class="chat-messages">
+        <ul id='chat-messages'>
+            {% if messages %}
+            {% for message in messages %}
+            {% if message.type == 'outgoing' %}
+            <li class="chat-owner">{{ message.message}}</li>
+            {% else %}
+            <li class="chat-сompanion">{{ message.message}}</li>
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            <div class="chat-alert"> No messages</div>
+            {% endif %}
+        </ul>
+    </div>
+    <form action="" onsubmit="sendMessage(event)">
+        <textarea class="chat-input-text" id="messageText" maxlength="255" required></textarea>
+        <button class="chat-button-send" >Send</button>
+    </form>
+</div>
+
+<script>
+    const username = document.getElementById('username')
+    let chatMessages = document.getElementById('chat-messages')
+    let ws = new WebSocket(`ws://localhost:8000/chat/ws/${username.textContent}`)
+    ws.onmessage = (event) => {
+        let data = JSON.parse(event.data)
+        let liElement = document.createElement('li')
+        if (data.user === 'i') liElement.classList.add('chat-owner')
+        else liElement.classList.add('chat-сompanion')
+        liElement.textContent = data.message
+        chatMessages.appendChild(liElement)
+        console.log(event.data)
+    }
+    let sendMessage = (event) => {
+        let text = document.getElementById('messageText')
+        ws.send(text.value)
+        text.value = ''
+        event.preventDefault()
+    }
+</script>
+
+{% endblock %}

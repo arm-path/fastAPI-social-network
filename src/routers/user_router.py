@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.models.sessions import get_async_session
@@ -22,4 +23,7 @@ async def sign_up_user(data_user: CreateUserSchema,
 async def sign_in_user(data_user: Annotated[OAuth2PasswordRequestForm, Depends()],
                        services=Depends(UserService),
                        session=Depends(get_async_session)):
-    return await services.authorization_user(session, data_user)
+    token = await services.authorization_user(session, data_user)
+    response = JSONResponse(token)
+    response.set_cookie(key='jwt-token', value=token['access_token'])
+    return response

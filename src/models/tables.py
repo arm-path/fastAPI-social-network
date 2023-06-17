@@ -60,3 +60,22 @@ class Post(Base):
     user: Mapped['User'] = relationship(back_populates='posts')
     image_path: Mapped[str] = mapped_column(String, nullable=True)
     created: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
+
+
+class Chat(Base):
+    __tablename__ = 'chat'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_chat_1_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'))
+    user_chat_2_id: Mapped[int] = mapped_column(Integer, ForeignKey('user.id'))
+    messages: Mapped[list['Messages']] = relationship('Messages', back_populates="chat")
+
+
+class Messages(Base):
+    __tablename__ = 'messages'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sender_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    recipient_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    chat_id: Mapped[int] = mapped_column(Integer, ForeignKey('chat.id'))
+    chat: Mapped['Chat'] = relationship('Chat', back_populates="messages")
+    message: Mapped[str] = mapped_column(String(150), nullable=False)
+    created: Mapped[datetime] = mapped_column(DateTime, default=datetime.now())
